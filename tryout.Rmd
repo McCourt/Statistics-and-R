@@ -1,0 +1,49 @@
+---
+title: "Try out"
+output: html_document
+---
+
+```{r}
+f = function(x){
+  x*x
+}
+(l = list(func=f, values=1:3))
+l$func(2)
+```
+
+```{r}
+gcd = function(loc1, loc2)
+{
+  deg2rad = function(deg) return(deg*pi/180)
+
+  lat1  = deg2rad( loc1[1] )
+  lat2  = deg2rad( loc2[1] )
+  long1 = deg2rad( loc1[2] )
+  long2 = deg2rad( loc2[2] )
+
+  R = 6371 # Earth mean radius in km
+  d = acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(long2-long1)) * R
+  
+  return(d) # distance in km
+}
+
+formals(gcd)
+body(gcd)
+
+los_angeles = c(34.052235, -118.243683)
+durham = c(36.002453, -78.905869)
+
+gcd(los_angeles, durham)
+```
+
+```{r}
+month = 1
+f = function(month){
+  allSeason = c("spring","summer","sutumn","winter")
+  season = allSeason[as.double(as.integer(month / 4)+1)]
+  return(paste("You are a",season, "boy."))
+}
+print(f(month))
+```
+
+

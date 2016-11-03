@@ -1,0 +1,127 @@
+---
+title: "11.1 inference"
+output: html_document
+---
+```{r}
+library(dpryl)
+library(ggplot2)
+kissing = read.csv("https://stat.duke.edu/~mc301/data/kissing.csv", 
+                    stringsAsFactors = FALSE) %>% tbl_df()
+durham_apts = read.csv("https://stat.duke.edu/~mc301/data/durham_apts.csv") %>% tbl_df()
+source("https://stat.duke.edu/~cr173/Sta112_Fa16/code/one_num_boot.R")
+source("https://stat.duke.edu/~cr173/Sta112_Fa16/code/one_num_test.R")
+source("https://stat.duke.edu/courses/Fall15/sta112.01/code/one_cat_boot.R")
+source("https://stat.duke.edu/courses/Fall15/sta112.01/code/one_cat_test.R")
+```
+
+```{r}
+set.seed(11012016)
+nsim = 100
+boot_dist = data.frame(stat = rep(NA, nsim))
+for(i in 1:nsim)
+{
+  boot_sample = sample(kissing$side, size = nrow(kissing), replace = TRUE)
+  boot_dist$stat[i] = sum(boot_sample == "right") / nrow(kissing)
+}
+ggplot(boot_dist, aes(x = stat)) + geom_dotplot()
+```
+
+```{r}
+nsim = 15000
+boot_dist = data.frame(stat = rep(NA, nsim))
+for(i in 1:nsim)
+{
+  boot_sample = sample(kissing$side, size = nrow(kissing), replace = TRUE)
+  boot_dist$stat[i] = sum(boot_sample == "right") / nrow(kissing)
+}
+ggplot(data = boot_dist, aes(x = stat)) + geom_histogram(bins=20)
+```
+
+```{r}
+stat = sum(kissing$side == "right") / 124
+se_boot = sd(boot_dist$stat)
+boot_int = round(stat + c(-1,1) * 1.96 * se_boot, 4)
+ggplot(data = boot_dist, aes(x = stat)) +
+  geom_histogram() +
+  geom_vline(xintercept = boot_int, lty = 2)
+```
+
+```{r}
+ggplot(data = durham_apts, aes(x = rent)) +
+  geom_dotplot()
+durham_apts %>%
+  summarise(xbar = mean(rent), med = median(rent))
+```
+
+```{r}
+nsim = 15000
+boot_dist = data.frame(mean = rep(NA, nsim))
+for(i in 1:nsim)
+{
+  boot_sample = sample(durham_apts$rent, size = nrow(durham_apts), replace = TRUE)
+  boot_dist$mean[i] = mean(boot_sample)
+}
+ggplot(data = boot_dist, aes(x = mean)) + geom_histogram(bins=20)
+```
+
+```{r}
+nsim = 15000
+boot_dist = data.frame(med = rep(NA, nsim))
+for(i in 1:nsim)
+{
+  boot_sample = sample(durham_apts$rent, size = nrow(durham_apts), replace = TRUE)
+  boot_dist$med[i] = median(boot_sample)
+}
+ggplot(data = boot_dist, aes(x = med)) + geom_histogram(bins=20)
+```
+
+```{r}
+one_num_boot(durham_apts$rent, statistic = median, seed = 571035)
+```
+
+```{r}
+one_num_test(durham_apts$rent, statistic = mean, null = 800, alt = "greater", seed = 28732)
+```
+
+```{r}
+one_num_test(durham_apts$rent, statistic = median, null = 800, alt = "greater", seed = 235671)
+```
+
+```{r}
+set.seed(3212016)
+d = data.frame(x = 1:120) %>%
+    mutate(y = sin(2*pi*x/120) + runif(length(x),-1,1))
+
+l = loess(y ~ x, data=d)
+d$pred_y = predict(l)
+d$pred_y_se = predict(l,se=TRUE)$se.fit
+
+ggplot(d, aes(x,y)) +
+  geom_point() +
+  geom_line(aes(y=pred_y)) +
+  geom_line(aes(y=pred_y + 1.96 * pred_y_se), color="red") +
+  geom_line(aes(y=pred_y - 1.96 * pred_y_se), color="red")
+```
+
+```{r}
+n_rep = 10000
+res = matrix(NA, ncol=n_rep, nrow=nrow(d))
+
+for(i in 1:ncol(res))
+{ 
+  bootstrap_samp = d %>% select(x,y) %>% sample_n(nrow(d), replace=TRUE)
+  res[,i] = predict(loess(y ~ x, data=bootstrap_samp), newdata=d)
+}
+
+# Calculate the 95% bootstrap prediction interval
+d$bs_low = apply(res,1,quantile,probs=c(0.025), na.rm=TRUE)
+d$bs_up  = apply(res,1,quantile,probs=c(0.975), na.rm=TRUE)
+
+ggplot(d, aes(x,y)) +
+  geom_point() +
+  geom_line(aes(y=pred_y)) +
+  geom_line(aes(y=pred_y + 1.96 * pred_y_se), color="red") +
+  geom_line(aes(y=pred_y - 1.96 * pred_y_se), color="red") +
+  geom_line(aes(y=bs_low), color="blue") +
+  geom_line(aes(y=bs_up), color="blue")
+```
