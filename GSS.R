@@ -22,3 +22,22 @@ ggplot(d, aes(x = mean_diff)) +
   geom_histogram(bins = 10) +
   geom_vline(xintercept = xbar_diff, color = "red")
 (p_value = sum(d$mean_diff > xbar_diff) / nrow(d))
+
+## Student T-Test sample
+gss %>% 
+  filter(!is.na(hrsrelax)) %>%
+  summarise(mean(hrsrelax), median(hrsrelax), sd(hrsrelax), length(hrsrelax))
+hrsrelax_summ = gss %>% 
+  filter(!is.na(hrsrelax)) %>%
+  summarise(xbar = mean(hrsrelax), s = sd(hrsrelax), n = n())
+se = hrsrelax_summ$s / sqrt(hrsrelax_summ$n)
+t = (hrsrelax_summ$xbar - 3) / se
+df = hrsrelax_summ$n - 1
+(p_value = pt(t, df, lower.tail = FALSE))
+
+## Confidence interval for a mean
+t_star = qt(0.95, df)
+pt_est = hrsrelax_summ$xbar
+confidence_interval = round(pt_est + c(-1,1) * t_star * se, 2)
+t.test(gss$hrsrelax, mu = 3, alternative = "greater")
+t.test(gss$hrsrelax, conf.level = 0.90)$conf.int
